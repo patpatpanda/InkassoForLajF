@@ -1,0 +1,46 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. FEEMODULE.
+
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+       01 FEE-PERCENTAGE PIC 9(2)V99.
+      
+       01 FEE-SALARY PIC 9(5).
+      
+       01 BIRTHYEAR PIC 9(8).
+         88 1937-OR-EARLIER VALUE 0 THRU 19370000.
+         88 1938-1959       VALUE 19380000 THRU 19560000.
+         88 1999-2003       VALUE 19990000 THRU 20030000.
+         88 2004-2006       VALUE 20040000 THRU 20060000.
+       LINKAGE SECTION.
+       
+       01 WS-DATEOFBIRTH PIC 9(8).
+       01 WS-SALARY PIC 9(5).
+       01 WS-FEE PIC 9(5).
+
+       PROCEDURE DIVISION USING WS-SALARY
+                                WS-DATEOFBIRTH
+                                WS-FEE.
+
+           MOVE WS-SALARY TO FEE-SALARY
+           MOVE WS-DATEOFBIRTH TO BIRTHYEAR
+           EVALUATE TRUE
+               WHEN 1937-OR-EARLIER
+                   MOVE 0 TO FEE-PERCENTAGE
+               WHEN 1938-1959
+                   MOVE 0.1 TO FEE-PERCENTAGE
+               WHEN 1999-2003
+                   MOVE 0.19 TO FEE-PERCENTAGE
+               WHEN 2004-2006
+                   MOVE 0.12 TO FEE-PERCENTAGE
+               WHEN OTHER
+                   MOVE 0.31 TO FEE-PERCENTAGE
+           END-EVALUATE
+
+           COMPUTE WS-FEE = FEE-SALARY * FEE-PERCENTAGE
+        
+           GOBACK.

@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35825.156 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{535C04D7-A2A5-47C7-83E0-B340A995CD1F}") = "InkassoForLajF", "InkassoForLajF.cblproj", "{29A50411-D946-440B-9BC0-FCE8D07620B2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Debug|x64.ActiveCfg = Debug|x64
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Debug|x64.Build.0 = Debug|x64
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Debug|x86.ActiveCfg = Debug|x86
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Debug|x86.Build.0 = Debug|x86
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Release|x64.ActiveCfg = Release|x64
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Release|x64.Build.0 = Release|x64
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Release|x86.ActiveCfg = Release|x86
+		{29A50411-D946-440B-9BC0-FCE8D07620B2}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {161D12E8-44C9-4351-9FD7-5B1CE36C5E36}
+	EndGlobalSection
+EndGlobal
