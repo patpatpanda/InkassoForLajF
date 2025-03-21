@@ -4,4 +4,3 @@
            10 XML-EMPLOYEE-LAST-NAME PIC X(20).
            10 XML-EMPLOYEE-DATEOFBIRTH PIC 9(8).
            10 XML-SALARY PIC 9(5).
-
