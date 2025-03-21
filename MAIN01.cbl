@@ -1,11 +1,11 @@
-       IDENTIFICATION DIVISION.
+ï»¿       IDENTIFICATION DIVISION.
        PROGRAM-ID. Main01.
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-           SELECT EmployeeFile ASSIGN TO
-                  "C:\Projects\InkassoForLajF\employees.txt"
-                  ORGANIZATION IS LINE SEQUENTIAL.
+      *    SELECT EmployeeFile ASSIGN TO
+      *           "C:\Projects\InkassoForLajF\employees.txt"
+      *           ORGANIZATION IS LINE SEQUENTIAL.
            SELECT TaxFile ASSIGN TO "tax_output.xml"
                   ORGANIZATION IS LINE SEQUENTIAL.
 
@@ -23,8 +23,8 @@
 
        DATA DIVISION.
        FILE SECTION.
-       FD EmployeeFile.
-       01 EMPLOYEEFILE-DATA PIC X(54).
+      *FD EmployeeFile.
+      *01 EMPLOYEEFILE-DATA PIC X(54).
 
        FD TaxFile.
        01 TaxRecord PIC X(256).
@@ -37,17 +37,28 @@
 
        FD CSVFILE.
        01 FS-CSVFILE PIC X(30).
-       01 COLOR-VARIABLES.
-         05 COLOR-TITLE PIC 9 VALUE 1.          *> Blå
-         05 COLOR-TEXT PIC 9 VALUE 2.           *> Grön
-         05 COLOR-ERROR PIC 9 VALUE 3.          *> Röd
-         05 COLOR-WHITE PIC 9 VALUE 7.          *> Vit (standard)
+         
 
        WORKING-STORAGE SECTION.
+
+           EXEC SQL
+           DECLARE EmployeeCursor CURSOR FOR
+           SELECT ID_EMPLOYEE, FIRST_NAME, LAST_NAME, BIRTH_DATE, SALARY
+           , CHURCH
+           FROM REDWARRIOR.dbo.Employees
+           END-EXEC.
+
+
+
+
        COPY "W_EMP01.CPY".
        COPY "W_JSON02.CPY".
        COPY "W_XML03.CPY".
        COPY "W_CSV04.CPY".
+       COPY "C:\mrcopy\Employees.cpy".
+
+         
+
 
        01 CSV-STRING PIC X(50).
 
@@ -57,88 +68,152 @@
        01 WS-Salary PIC 9(5).
        01 WS-DATEOFBIRTH PIC 9(8).
        01 WS-FEE PIC 9(5).
+
+
+
        01 SWITCHES PIC 9.
          88 EOF VALUE 0 FALSE 1.
 
        01 JSON-OUTPUT PIC X(10000).
-
+           EXEC SQL
+                INCLUDE SQLCA
+             END-EXEC.
        PROCEDURE DIVISION.
 
-           PERFORM WRITE-TO-FILE
-           CALL "SCREEN01"
+       MAIN SECTION.
+           PERFORM CONNECT-TO-DATABASE.
+           PERFORM INITIALIZE-FILE-HANDLING.
+
+           PERFORM PROCESS-FILE-WRITE.
+          
+           PERFORM TERMINATE-FILE-HANDLING.
+      *    CALL "SCREEN01"
 
            GOBACK.
-       COMPUTE-TAX SECTION.
-           OPEN INPUT EMPLOYEEFILE
-           DISPLAY '------------------------'
-           PERFORM 20 TIMES
-               READ EMPLOYEEFILE INTO EMPLOYEE-ROW(I)
-               IF NOT EOF
-                   MOVE EMPLOYEE-SALARY(I) TO WS-Salary
-                   MOVE EMPLOYEE-CHURCH(I) TO WS-ChurchMember
-                   MOVE EMPLOYEE-DATEOFBIRTH(I) TO  WS-DATEOFBIRTH
-
-                   CALL "TaxModule" USING WS-Salary
-                                          WS-ChurchMember
-                                          WS-TaxAmount
-
-                   DISPLAY 'Employee: ' FUNCTION TRIM (
-                     EMPLOYEE-FIRST-NAME(I))
-                     SPACE FUNCTION TRIM (EMPLOYEE-LAST-NAME(I))
-
-                   DISPLAY 'Salary:   ' WS-Salary
-                   DISPLAY 'Tax:      ' WS-TaxAmount
-                   DISPLAY 'DATE:     ' WS-DATEOFBIRTH
-                   DISPLAY '------------------------'
-                   ADD 1 TO I
-
-               END-IF
-           END-PERFORM
-           CLOSE EmployeeFile.
-       WRITE-TO-FILE SECTION.
-
-           OPEN INPUT EMPLOYEEFILE
+       INITIALIZE-FILE-HANDLING SECTION.
+           EXEC SQL
+              OPEN EmployeeCursor
+          END-EXEC.
            OPEN OUTPUT JSONFILE
            OPEN OUTPUT XMLFILE
-           OPEN OUTPUT CSVFILE
-           MOVE 1 TO I
-           PERFORM 20 TIMES
+           OPEN OUTPUT CSVFILE.
+       TERMINATE-FILE-HANDLING SECTION.
+           EXEC SQL
+              CLOSE EmployeeCursor
+          END-EXEC.
+           CLOSE JSONFILE
+           CLOSE XMLFILE
+           CLOSE CSVFILE.
 
-               READ EMPLOYEEFILE INTO EMPLOYEE-ROW(I)
-               IF NOT EOF
-                   MOVE EMPLOYEE-SALARY(I) TO WS-Salary
-                   MOVE EMPLOYEE-CHURCH(I) TO WS-ChurchMember
-                   MOVE EMPLOYEE-DATEOFBIRTH(I) TO WS-DATEOFBIRTH
+       PROCESS-FILE-WRITE SECTION.
 
-                   CALL "TaxModule" USING WS-Salary
-                                          WS-ChurchMember
-                                          WS-TaxAmount
+           DISPLAY 'ENTERING PROCESS-FILE-WRITE SECTION...'.
 
-                   CALL "FeeModule" USING WS-Salary
-                                          WS-DATEOFBIRTH
-                                          WS-FEE
 
-                   PERFORM MOVE-JSON-DATA
-                   PERFORM MOVE-XML-DATA
-                   PERFORM MOVE-CSV-DATA
-                   PERFORM STRING-CSV
 
-                   WRITE FS-CSVFILE
-                   ADD 1 TO I
-               END-IF
-           END-PERFORM
+
+           PERFORM UNTIL EOF
+               EXEC SQL
+                   FETCH EmployeeCursor INTO
+                       :Employees-ID-EMPLOYEE,
+                       :Employees-FIRST-NAME,
+                       :Employees-LAST-NAME,
+                       :Employees-BIRTH-DATE,
+                       :Employees-SALARY,
+                       :Employees-CHURCH
+               END-EXEC
+
+
+
+
+               DISPLAY 'RAW FETCH DATA:'
+               
+               DISPLAY 'FIRST NAME: ' Employees-FIRST-NAME
+               DISPLAY 'LAST NAME: ' Employees-LAST-NAME
+               DISPLAY 'BIRTH DATE: ' Employees-BIRTH-DATE
+               DISPLAY 'SALARY: ' Employees-SALARY
+               DISPLAY 'CHURCH: ' Employees-CHURCH
+
+               EVALUATE TRUE
+                   WHEN SQLCODE = 100
+                       SET EOF TO TRUE
+                       DISPLAY 'REACHED END OF EMPLOYEE DATA.'
+                   WHEN SQLCODE = 0
+                       DISPLAY "Employee: " Employees-FIRST-NAME " "
+                         Employees-LAST-NAME
+                       DISPLAY "Birth Date: " Employees-BIRTH-DATE
+                       DISPLAY "Salary: " Employees-SALARY
+                       DISPLAY "Church Member: " Employees-CHURCH
+                       DISPLAY "------------------------"
+
+                       MOVE Employees-SALARY TO WS-Salary
+                       MOVE Employees-CHURCH TO WS-ChurchMember
+                       MOVE Employees-BIRTH-DATE TO WS-DATEOFBIRTH
+
+                       CALL "TaxModule" USING WS-Salary
+                                              WS-ChurchMember
+                                              WS-TaxAmount
+
+                       CALL "FeeModule" USING WS-Salary
+                                              WS-DATEOFBIRTH
+                                              WS-FEE
+
+                       DISPLAY "Calculated Tax: " WS-TaxAmount
+                      DISPLAY "Calculated Fee: " WS-FEE   
+                       
+
+
+
+
+                      EXEC SQL
+                           INSERT INTO REDWARRIOR.dbo.Taxes( 
+                           ID_EMPLOYEE ,
+                            TaxesAmount)
+
+                          VALUES (:Employees-ID-EMPLOYEE, :WS-TaxAmount)
+                       END-EXEC
+                       DISPLAY "Tax saved for Employee ID: "
+                         Employees-ID-EMPLOYEE
+      
+                    EXEC SQL
+                            INSERT INTO  REDWARRIOR.dbo.Fees ( 
+                            ID_EMPLOYEE
+                            ,
+                            FeeAmount)
+
+                         VALUES (:Employees-ID-EMPLOYEE, :WS-FEE)
+                     END-EXEC
+
+                       DISPLAY "Fee saved for Employee ID: "
+                         Employees-ID-EMPLOYEE
+
+
+                       PERFORM MOVE-JSON-DATA
+                       PERFORM MOVE-XML-DATA
+                       PERFORM MOVE-CSV-DATA
+                       PERFORM STRING-CSV
+
+
+                       WRITE FS-CSVFILE
+                   WHEN OTHER
+                       DISPLAY 'ERROR FETCHING DATA: ' SQLCODE
+                       STOP RUN
+               END-EVALUATE
+           END-PERFORM.
+           EXEC SQL COMMIT END-EXEC
+
+           
+
 
            JSON GENERATE JSON-OUTPUT FROM JSON-EMPLOYEE
            WRITE FS-JSONFILE FROM JSON-OUTPUT
 
            XML GENERATE FS-XMLFILE FROM XML-EMPLOYEE
-           WRITE FS-XMLFILE
+           WRITE FS-XMLFILE.
 
-           CLOSE EmployeeFile
-           CLOSE JSONFILE
-           CLOSE XMLFILE
-           CLOSE CSVFILE.
-           CALL "SCREEN01".
+
+          
+          
 
        MOVE-JSON-DATA SECTION.
            MOVE EMPLOYEE-FIRST-NAME(I) TO JSON-EMPLOYEE-FIRST-NAME(I)
@@ -168,63 +243,15 @@
              CSV-FEE(I) ";"
              DELIMITED BY SPACES INTO FS-CSVFILE.
 
+       CONNECT-TO-DATABASE SECTION.
 
+           EXEC SQL
+               CONNECT TO 'redwarriordb'
+           END-EXEC.
 
-       COMPUTE-FEE SECTION.
+           DISPLAY 'Database connection successful.'
+           DISPLAY 'SQL CODE: ' SQLCODE.
 
-           OPEN INPUT EMPLOYEEFILE
-           DISPLAY '------------------------'
-           PERFORM 20 TIMES
-               READ EMPLOYEEFILE INTO EMPLOYEE
-               IF NOT EOF
-                   MOVE EMPLOYEE-SALARY(I) TO WS-Salary
-                   MOVE EMPLOYEE-DATEOFBIRTH(I) TO WS-DATEOFBIRTH
-
-                   CALL "FeeModule" USING WS-Salary
-                                          WS-DATEOFBIRTH
-                                          WS-FEE
-
-                   DISPLAY 'Employee: ' FUNCTION TRIM (
-                     EMPLOYEE-FIRST-NAME(I))
-                     SPACE FUNCTION TRIM (EMPLOYEE-LAST-NAME(I))
-
-                   DISPLAY 'DATE:   ' WS-DATEOFBIRTH
-                   DISPLAY 'Fee:      ' WS-FEE
-
-                   DISPLAY '------------------------'
-               END-IF
-           END-PERFORM.
-           CLOSE EmployeeFile.
-
-       SHOW-TAX-AMOUNT SECTION.
-
-           OPEN INPUT EMPLOYEEFILE
-           DISPLAY '------------------------'
-           PERFORM 20 TIMES
-               READ EMPLOYEEFILE INTO EMPLOYEE
-               IF NOT EOF
-                   MOVE EMPLOYEE-SALARY(I) TO WS-Salary
-                   MOVE EMPLOYEE-CHURCH(I) TO WS-ChurchMember
-                   MOVE EMPLOYEE-DATEOFBIRTH(I) TO WS-DATEOFBIRTH
-
-                   CALL "TaxModule" USING WS-Salary
-                                          WS-ChurchMember
-                                          WS-TaxAmount
-
-                   DISPLAY 'Employee: ' FUNCTION TRIM (
-                     EMPLOYEE-FIRST-NAME(I))
-                     SPACE FUNCTION TRIM (EMPLOYEE-LAST-NAME(I))
-
-                   
-                   DISPLAY 'DATE:     ' WS-DATEOFBIRTH
-                   DISPLAY 'Tax:      ' WS-TaxAmount
-
-                  
-                   DISPLAY '------------------------'
-               END-IF
-           END-PERFORM
-
-           CLOSE EmployeeFile.
-
+      
 
        

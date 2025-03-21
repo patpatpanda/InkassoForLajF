@@ -4,4 +4,4 @@
            10 JSON-EMPLOYEE-LAST-NAME PIC X(20).
            10 JSON-EMPLOYEE-DATEOFBIRTH PIC 9(8).
            10 JSON-TAX-AMOUNT PIC 9(5).
-           10 JSON-SALARY PIC 9(5).
+        

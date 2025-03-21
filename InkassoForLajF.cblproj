@@ -10,6 +10,7 @@
     <RootNamespace>InkassoForLajF</RootNamespace>
     <MFProjectType>Native</MFProjectType>
     <StartupObject>MAIN01</StartupObject>
+    <SQLDirectives>SQL(DBMAN=ODBC)</SQLDirectives>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>.\bin\x86\Debug\</OutputPath>
