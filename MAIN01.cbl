@@ -184,6 +184,16 @@
                          VALUES (:Employees-ID-EMPLOYEE, :WS-FEE)
                      END-EXEC
 
+                       EXEC SQL
+         INSERT INTO REDWARRIOR.dbo.EmployeeDeductions (EmployeeId, 
+         TaxAmount,
+         FeeAmount)
+         VALUES (:Employees-ID-EMPLOYEE, :WS-TaxAmount, :WS-FEE)
+        END-EXEC
+
+
+
+
                        DISPLAY "Fee saved for Employee ID: "
                          Employees-ID-EMPLOYEE
 
