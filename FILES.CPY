@@ -1,0 +1,8 @@
+﻿       FD JSONFILE.
+       01 FS-JSONFILE PIC X(10000).
+
+       FD XMLFILE.
+       01 FS-XMLFILE PIC X(10000).
+
+       FD CSVFILE.
+       01 FS-CSVFILE PIC X(32).

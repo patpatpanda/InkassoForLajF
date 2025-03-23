@@ -1,11 +1,14 @@
-﻿       IDENTIFICATION DIVISION.
+﻿
+           
+
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. Main01.
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-      *    SELECT EmployeeFile ASSIGN TO
-      *           "C:\Projects\InkassoForLajF\employees.txt"
-      *           ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT EmployeeFile ASSIGN TO
+                  "C:\Projects\InkassoForLajF\employees.txt"
+                  ORGANIZATION IS LINE SEQUENTIAL.
            SELECT TaxFile ASSIGN TO "tax_output.xml"
                   ORGANIZATION IS LINE SEQUENTIAL.
 
@@ -23,35 +26,28 @@
 
        DATA DIVISION.
        FILE SECTION.
-      *FD EmployeeFile.
-      *01 EMPLOYEEFILE-DATA PIC X(54).
+       FD EmployeeFile.
+       01 EMPLOYEEFILE-DATA PIC X(54).
 
        FD TaxFile.
        01 TaxRecord PIC X(256).
 
-       FD JSONFILE.
-       01 FS-JSONFILE PIC X(10000).
-
-       FD XMLFILE.
-       01 FS-XMLFILE PIC X(10000).
-
-       FD CSVFILE.
-       01 FS-CSVFILE PIC X(32).
+       COPY "FILES.CPY".
 
        WORKING-STORAGE SECTION.
 
-           EXEC SQL
-           DECLARE EmployeeCursor CURSOR FOR
-           SELECT ID_EMPLOYEE, FIRST_NAME, LAST_NAME, BIRTH_DATE, SALARY
-           , CHURCH
-           FROM REDWARRIOR.dbo.Employees
-           END-EXEC.
+
+
+
+       COPY "EMPLOYEECURSOR.CPY".
 
        COPY "W_EMP01.CPY".
        COPY "W_JSON02.CPY".
        COPY "W_XML03.CPY".
        COPY "W_CSV04.CPY".
        COPY "C:\mrcopy\Employees.cpy".
+      
+       COPY "EMPLOYEEDEDUCTIONS-ARRAY.CPY".
 
        01 CSV-STRING PIC X(50).
 
@@ -66,6 +62,8 @@
        01 WS-DATEOFBIRTH PIC 9(8).
 
        01 WS-FEE PIC 9(5).
+
+      
 
        01 SWITCHES PIC 9.
 
@@ -124,6 +122,7 @@
            CLOSE CSVFILE.
 
        PROCESS-FILE-WRITE SECTION.
+           MOVE 0 TO I
 
            PERFORM UNTIL EOF
 
@@ -167,9 +166,9 @@
                                               WS-DATEOFBIRTH
                                               WS-FEE
 
-                      
                        PERFORM MOVE-ALL-DATA
 
+                       PERFORM MOVE-ALL-TO-DB
                        PERFORM STRING-CSV
 
                        WRITE FS-CSVFILE
@@ -181,6 +180,8 @@
                END-EVALUATE
 
            END-PERFORM.
+
+           PERFORM INSERT-ALL-TO-DB
 
            EXEC SQL COMMIT END-EXEC
 
@@ -194,7 +195,7 @@
 
        MOVE-ALL-DATA SECTION.
 
-           MOVE Employees-ID-EMPLOYEE TO I
+           ADD 1 TO I
 
            MOVE Employees-FIRST-NAME TO JSON-EMPLOYEE-FIRST-NAME(I)
              XML-EMPLOYEE-FIRST-NAME(I)
@@ -210,11 +211,50 @@
 
            MOVE WS-TaxAmount TO JSON-TAX-AMOUNT(I)
 
-           MOVE WS-FEE TO CSV-FEE(I).
+           MOVE WS-FEE TO CSV-FEE(I)
 
            COMPUTE XML-SALARY(I) = WS-GROSSINCOME - WS-TAXAMOUNT.
 
-           .
+           
+
+       MOVE-ALL-TO-DB SECTION.
+
+           ADD 1 TO WS-Index
+
+           MOVE Employees-ID-EMPLOYEE TO EmpId(WS-Index)
+           MOVE WS-GROSSINCOME TO Salary(WS-Index)
+           MOVE WS-TaxAmount TO TaxAmount(WS-Index)
+           MOVE WS-FEE TO FeeAmount(WS-Index)
+
+           COMPUTE NetSalary(WS-Index) =
+             Salary(WS-Index) -
+             TaxAmount(WS-Index) -
+             FeeAmount(WS-Index).
+
+       INSERT-ALL-TO-DB SECTION.
+
+           MOVE WS-Index TO Total-Employees
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > Total-Employees
+               MOVE EmpId(I) TO Host-EmpId
+               MOVE Salary(I) TO Host-Salary
+               MOVE TaxAmount(I) TO Host-TaxAmount
+               MOVE FeeAmount(I) TO Host-FeeAmount
+               MOVE NetSalary(I) TO Host-NetSalary
+
+               EXEC SQL
+                   INSERT INTO REDWARRIOR.dbo.EmployeeDeductions
+                   (ID_EMPLOYEE, Salary, TaxAmount, FeeAmount, 
+                   NetSalary)
+                   VALUES
+                   (:Host-EmpId,
+                    :Host-Salary,
+                    :Host-TaxAmount,
+                    :Host-FeeAmount,
+                    :Host-NetSalary)
+               END-EXEC
+
+           END-PERFORM.
 
        STRING-CSV SECTION.
 
@@ -236,4 +276,4 @@
 
            DISPLAY 'Database connection successful.'
 
-           DISPLAY 'SQL CODE: ' SQLCODE.
+           DISPLAY 'SQL CODE: ' SQLCODE
